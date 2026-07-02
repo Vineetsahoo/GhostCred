@@ -1,0 +1,24 @@
+# GhostCred configuration — committed to repo, safe for version control.
+# Real secrets go in .env (which is gitignored).
+
+min_confidence: 0.7
+include_ai_toolchain: true
+include_global_configs: false   # only enable for local dev machine scans
+auto_revoke: false
+dry_run_revocations: true
+metrics_port: 9308
+
+# Paths excluded from scanning.
+# Tests deliberately contain fake-but-realistic secrets as fixtures — they must
+# never trigger the CI blocker. Docs are also excluded (example values only).
+ignore_paths:
+  - "tests/**"
+  - "docs/**"
+  - "*.example"
+  - ".ghostcred.yml.example"
+
+# Populated by CI after `gh run view --log` — used by the lineage tracker.
+ci_log_dir: ".ghostcred/ci-logs"
+
+# Optional: local docker image tags to inspect with `docker history`.
+docker_image_tags: []

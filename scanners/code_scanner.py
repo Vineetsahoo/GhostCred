@@ -49,7 +49,8 @@ def _is_ai_toolchain_file(path: Path, root: Path) -> bool:
     return False
 
 
-def _iter_candidate_files(root: Path):
+def _iter_candidate_files(root: Path, ignore_paths: list[str] | None = None):
+    ignore_paths = ignore_paths or []
     for path in root.rglob("*"):
         if not path.is_file():
             continue
@@ -57,16 +58,23 @@ def _iter_candidate_files(root: Path):
             continue
         if _is_ai_toolchain_file(path, root):
             continue
+        # Check against ignore_paths globs (relative to root, forward slashes)
+        try:
+            rel = str(path.relative_to(root)).replace("\\", "/")
+        except ValueError:
+            rel = path.name
+        if any(fnmatch.fnmatch(rel, pat) for pat in ignore_paths):
+            continue
         if path.name in ENV_FILENAMES or path.suffix.lower() in CODE_EXTENSIONS:
             yield path
         elif path.name.lower() == "dockerfile" or path.name.startswith("Dockerfile"):
             yield path
 
 
-def scan_codebase(root: Path, salt: str) -> list[Finding]:
+def scan_codebase(root: Path, salt: str, ignore_paths: list[str] | None = None) -> list[Finding]:
     """Baseline scan of source + .env files — parity with Gitleaks/TruffleHog coverage."""
     findings: list[Finding] = []
-    for path in _iter_candidate_files(root):
+    for path in _iter_candidate_files(root, ignore_paths=ignore_paths):
         kind = "env" if path.name in ENV_FILENAMES else "code"
         findings.extend(scan_file(path, source_kind=kind, salt=salt))
     return findings

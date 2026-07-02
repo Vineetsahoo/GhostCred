@@ -42,7 +42,7 @@ def _run_scan(
     start = time.time()
     click.echo(f"🔍 Scanning {root} ...")
 
-    findings = scan_codebase(root, salt=cfg.salt)
+    findings = scan_codebase(root, salt=cfg.salt, ignore_paths=cfg.ignore_paths)
     if ai_toolchain:
         findings.extend(
             scan_ai_toolchain(root, salt=cfg.salt, include_global_configs=global_configs)

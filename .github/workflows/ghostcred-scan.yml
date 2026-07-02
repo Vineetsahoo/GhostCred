@@ -31,7 +31,6 @@ jobs:
         run: pip install -e .
 
       - name: Download CI run logs (for lineage tracking)
-        if: env.GH_TOKEN != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -44,17 +43,19 @@ jobs:
 
       - name: Run GhostCred scan
         env:
-          GHOSTCRED_SALT: ${{ secrets.GHOSTCRED_SALT || 'ci-default-salt-change-me' }}
+          # Set GHOSTCRED_SALT as a repository secret for stable fingerprints across runs.
+          # If not set, a random salt is used (findings won't be comparable run-to-run).
+          GHOSTCRED_SALT: ${{ secrets.GHOSTCRED_SALT }}
         run: |
           ghostcred scan \
             --path . \
-            --ai-toolchain \
             --no-global-configs \
             --lineage \
-            --no-dry-run \
-            --min-confidence 0.7 \
+            --dry-run \
             --fail-on-finding \
             --json-out ghostcred-report.json
+          # Note: min_confidence, ignore_paths, and ci_log_dir are read from
+          # .ghostcred.yml committed to the repo — no need to repeat them here.
 
       - name: Upload scan report
         if: always()
@@ -82,7 +83,7 @@ jobs:
                 `| \`${f.provider}\` | \`${f.source_kind}\` | \`${f.source_path}:${f.line}\` | ${f.confidence} |`
               ),
               '',
-              '> Secrets detected in MCP configs, IDE settings, or source files. Rotate immediately.',
+              '> Secrets found in source files or MCP/IDE configs. Rotate immediately and re-push.',
             ].join('\n');
             github.rest.issues.createComment({
               issue_number: context.issue.number,
