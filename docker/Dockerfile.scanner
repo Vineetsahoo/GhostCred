@@ -1,0 +1,36 @@
+# GhostCred scanner image — scans a build context BEFORE the real image is built.
+#
+# Usage (standalone scan):
+#   docker build -f docker/Dockerfile.scanner -t ghostcred-scanner .
+#   docker run --rm -v "$(pwd)":/scan-target ghostcred-scanner \
+#     scan --path /scan-target --ai-toolchain --lineage --fail-on-finding
+#
+# Usage (pre-build guard):
+#   scripts/docker-build-guard.sh <real docker build args>
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy only what's needed to install the package.
+COPY pyproject.toml README.md ./
+
+# Copy the package source. At the repo root, the Python package is in the
+# directory that contains cli.py, config.py, scanners/, lineage/, etc.
+# We map it to ghostcred/ so setuptools can find it.
+COPY cli.py config.py __init__.py ./ghostcred_src/
+COPY scanners/ ./ghostcred_src/scanners/
+COPY lineage/ ./ghostcred_src/lineage/
+COPY revocation/ ./ghostcred_src/revocation/
+COPY metrics/ ./ghostcred_src/metrics/
+
+# Rewrite the package path for the container install.
+RUN pip install --no-cache-dir click requests pyyaml prometheus-client
+
+# Install directly from the copied sources.
+COPY . /app/ghostcred_build/
+RUN pip install --no-cache-dir -e /app/ghostcred_build/
+
+WORKDIR /scan-target
+ENTRYPOINT ["ghostcred"]
+CMD ["scan", "--path", "/scan-target", "--ai-toolchain", "--lineage", "--fail-on-finding"]

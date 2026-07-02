@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  ghostcred-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.scanner
+    command: ["watch", "--path", "/scan-target", "--interval", "120"]
+    volumes:
+      - ../:/scan-target:ro
+    ports:
+      - "9308:9308"
+    environment:
+      - GHOSTCRED_SALT=${GHOSTCRED_SALT:-change-me-in-production}
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    volumes:
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - ghostcred-agent
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-ghostcred}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../grafana/dashboards:/etc/grafana/provisioning/dashboards/ghostcred:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  grafana-data:

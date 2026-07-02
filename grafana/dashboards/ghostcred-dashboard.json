@@ -1,0 +1,122 @@
+{
+  "title": "GhostCred — Secret Sprawl & Revocation",
+  "uid": "ghostcred-main",
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Secrets detected over time (by provider)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(ghostcred_findings_total[1h])) by (provider)",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Secrets by source kind (code vs AI toolchain)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(ghostcred_findings_total[1h])) by (source_kind)",
+          "legendFormat": "{{source_kind}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "bargauge",
+      "title": "Blast radius scores (current)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "valueMode": "color",
+        "minVizHeight": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "orange", "value": 60 },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "min": 0,
+          "max": 100,
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "ghostcred_blast_radius_score",
+          "legendFormat": "{{fingerprint_short}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Revocations — success vs failed",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "options": {
+        "reduceOptions": { "calcs": ["sum"] },
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(ghostcred_revocations_total) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Avg scan duration (s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "options": { "reduceOptions": { "calcs": ["mean"] } },
+      "targets": [
+        {
+          "expr": "avg(ghostcred_scan_duration_seconds_sum / ghostcred_scan_duration_seconds_count)",
+          "legendFormat": "avg"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Total findings by provider × source kind",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "expr": "sum(ghostcred_findings_total) by (provider, source_kind)",
+          "legendFormat": "{{provider}} / {{source_kind}}",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": {} }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 2
+}

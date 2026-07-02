@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "ghostcred"
+    static_configs:
+      - targets: ["ghostcred-agent:9308"]
