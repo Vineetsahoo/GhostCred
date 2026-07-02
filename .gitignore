@@ -1,0 +1,118 @@
+# ── GhostCred-specific ────────────────────────────────────────────────────────
+
+# Real env file — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Scan reports and CI log cache
+ghostcred-report.json
+ghostcred-precommit-report.json
+.ghostcred/ci-logs/
+.ghostcred/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env.bak
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+nosetests.xml
+junit*.xml
+test-results/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# ── Editors / IDEs ────────────────────────────────────────────────────────────
+
+# VS Code — user-specific settings only; workspace settings may be project files
+.vscode/settings.json
+.vscode/*.code-workspace
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# JetBrains
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Vim / Emacs swap files
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+
+# Local docker build logs (used by lineage tracker — not for version control)
+*.log
+docker-build.log
+
+# Grafana persistent data volume (if mounted locally)
+grafana-data/
+
+# ── Node (if any JS tooling is added) ────────────────────────────────────────
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Terraform (if IaC scanning is added later) ───────────────────────────────
+
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
