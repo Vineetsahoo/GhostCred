@@ -1,0 +1,92 @@
+name: GhostCred Secret Scan
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  secret-scan:
+    name: GhostCred AI-Toolchain Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for git-lineage tracing
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install GhostCred
+        run: pip install -e .
+
+      - name: Download CI run logs (for lineage tracking)
+        if: env.GH_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .ghostcred/ci-logs
+          gh run list --limit 5 --json databaseId -q '.[].databaseId' | \
+            while read run_id; do
+              gh run view "$run_id" --log > ".ghostcred/ci-logs/run-${run_id}.txt" 2>/dev/null || true
+            done
+        continue-on-error: true
+
+      - name: Run GhostCred scan
+        env:
+          GHOSTCRED_SALT: ${{ secrets.GHOSTCRED_SALT || 'ci-default-salt-change-me' }}
+        run: |
+          ghostcred scan \
+            --path . \
+            --ai-toolchain \
+            --no-global-configs \
+            --lineage \
+            --no-dry-run \
+            --min-confidence 0.7 \
+            --fail-on-finding \
+            --json-out ghostcred-report.json
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghostcred-report
+          path: ghostcred-report.json
+          retention-days: 30
+
+      - name: Comment findings on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report = {};
+            try { report = JSON.parse(fs.readFileSync('ghostcred-report.json', 'utf8')); } catch {}
+            const count = (report.findings || []).length;
+            const body = [
+              `## ❌ GhostCred: ${count} secret(s) detected`,
+              '',
+              '| Provider | Source Kind | Location | Confidence |',
+              '|----------|-------------|----------|------------|',
+              ...(report.findings || []).map(f =>
+                `| \`${f.provider}\` | \`${f.source_kind}\` | \`${f.source_path}:${f.line}\` | ${f.confidence} |`
+              ),
+              '',
+              '> Secrets detected in MCP configs, IDE settings, or source files. Rotate immediately.',
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
