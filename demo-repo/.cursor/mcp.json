@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "openai": {
+      "env": {
+        "OPENAI_API_KEY": "sk-proj-FAKEKEYFORTHISDEMOONLYNOTREAL1234"
+      }
+    }
+  }
+}
