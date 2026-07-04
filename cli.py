@@ -47,7 +47,12 @@ def _run_scan(
     findings = scan_codebase(root, salt=cfg.salt, ignore_paths=cfg.ignore_paths)
     if ai_toolchain:
         findings.extend(
-            scan_ai_toolchain(root, salt=cfg.salt, include_global_configs=global_configs)
+            scan_ai_toolchain(
+                root,
+                salt=cfg.salt,
+                include_global_configs=global_configs,
+                ignore_paths=cfg.ignore_paths,
+            )
         )
 
     findings = [f for f in findings if f.confidence >= threshold]

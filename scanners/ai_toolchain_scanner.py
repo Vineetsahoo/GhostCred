@@ -41,8 +41,9 @@ def _platform_ai_config_paths() -> list[Path]:
     return [p for p in candidates if p.exists()]
 
 
-def _project_local_ai_configs(root: Path) -> list[Path]:
+def _project_local_ai_configs(root: Path, ignore_paths: list[str] | None = None) -> list[Path]:
     """Project-committed MCP/IDE configs — the most common accidental-commit vector."""
+    ignore_paths = ignore_paths or []
     matches: list[Path] = []
     for path in root.rglob("*"):
         if not path.is_file():
@@ -51,6 +52,10 @@ def _project_local_ai_configs(root: Path) -> list[Path]:
             rel = str(path.relative_to(root)).replace("\\", "/")
         except ValueError:
             rel = path.name
+            
+        if any(fnmatch.fnmatch(rel, pat) for pat in ignore_paths):
+            continue
+            
         for pattern in AI_TOOLCHAIN_GLOBS:
             stripped = pattern.lstrip("*").lstrip("/")
             if fnmatch.fnmatch(rel, stripped):
@@ -75,7 +80,9 @@ def _shell_history_files() -> list[Path]:
     return paths
 
 
-def scan_ai_toolchain(root: Path, salt: str, include_global_configs: bool = True) -> list[Finding]:
+def scan_ai_toolchain(
+    root: Path, salt: str, include_global_configs: bool = True, ignore_paths: list[str] | None = None
+) -> list[Finding]:
     """
     Scan the AI dev toolchain blind spots:
       1. Global desktop-app configs (Claude Desktop, Cursor, etc.) — off by default
@@ -89,7 +96,7 @@ def scan_ai_toolchain(root: Path, salt: str, include_global_configs: bool = True
         for path in _platform_ai_config_paths():
             findings.extend(scan_file(path, source_kind="mcp_config", salt=salt))
 
-    for path in _project_local_ai_configs(root):
+    for path in _project_local_ai_configs(root, ignore_paths=ignore_paths):
         kind = "mcp_config" if "mcp" in path.name.lower() or "claude" in path.name.lower() else "ide_config"
         findings.extend(scan_file(path, source_kind=kind, salt=salt))
 
