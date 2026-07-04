@@ -4,7 +4,7 @@ import requests
 
 from ghostcred.revocation.base import RevocationResult
 
-API_ROOT = "https://api.github.com"
+API_ROOT = "http://localhost:5001"
 
 
 class GitHubRevoker:

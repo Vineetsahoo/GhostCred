@@ -35,6 +35,8 @@ def _run_scan(
     json_out: str | None,
     fail_on_finding: bool,
     metrics: bool,
+    grace_period: int = 0,
+    notify_only: bool = False,
 ) -> int:
     """Core scan logic. Returns the number of findings above threshold."""
     effective_dry_run = not revoke_live or dry_run
@@ -83,14 +85,24 @@ def _run_scan(
         if revoke_live and f.provider in REVOKER_REGISTRY:
             revoker = REVOKER_REGISTRY[f.provider]
             if revoker.check_live(f.raw_secret):
-                result = revoker.revoke(f.raw_secret, f.fingerprint, dry_run=effective_dry_run)
-                click.echo(
-                    f"      🔒 revocation: {result.detail} "
-                    f"(success={result.success}, dry_run={result.dry_run})"
-                )
-                if metrics:
-                    record_revocation(f.provider, result.success)
-                report["revocations"].append(result.__dict__)
+                if notify_only:
+                    click.echo("      🚨 notify-only: Secret is live, sending alert instead of revoking.")
+                else:
+                    if grace_period > 0:
+                        click.echo(f"      ⏳ Grace period: {grace_period}s to Ctrl+C and cancel revocation...")
+                        for remaining in range(grace_period, 0, -1):
+                            click.echo(f"         Revoking in {remaining}s...", nl=False)
+                            time.sleep(1)
+                            click.echo("\r", nl=False)
+                            
+                    result = revoker.revoke(f.raw_secret, f.fingerprint, dry_run=effective_dry_run)
+                    click.echo(
+                        f"      🔒 revocation: {result.detail} "
+                        f"(success={result.success}, dry_run={result.dry_run})"
+                    )
+                    if metrics:
+                        record_revocation(f.provider, result.success)
+                    report["revocations"].append(result.__dict__)
             else:
                 click.echo("      ✓ secret already inactive/rotated — no action needed")
 
@@ -131,6 +143,8 @@ def main() -> None:
 @click.option("--json-out", type=click.Path(), default=None, help="Write full JSON report to this path.")
 @click.option("--fail-on-finding", is_flag=True, default=False, help="Exit non-zero if any finding above threshold is present (CI PR blocking).")
 @click.option("--metrics/--no-metrics", default=False, help="Expose Prometheus metrics on scan completion.")
+@click.option("--grace-period", default=0, type=int, help="Seconds to wait before revoking a live secret.")
+@click.option("--notify-only", is_flag=True, default=False, help="Send alerts instead of actually revoking live secrets.")
 def scan(
     path_: str,
     ai_toolchain: bool,
@@ -142,6 +156,8 @@ def scan(
     json_out: str | None,
     fail_on_finding: bool,
     metrics: bool,
+    grace_period: int,
+    notify_only: bool,
 ) -> None:
     """Run a full scan: code + AI toolchain blind spots, with optional lineage and revocation."""
     root = Path(path_).resolve()
@@ -160,6 +176,8 @@ def scan(
         json_out=json_out,
         fail_on_finding=fail_on_finding,
         metrics=metrics,
+        grace_period=grace_period,
+        notify_only=notify_only,
     )
 
 

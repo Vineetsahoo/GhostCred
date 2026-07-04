@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile.scanner
     command: ["watch", "--path", "/scan-target", "--interval", "120"]
     volumes:
-      - ../:/scan-target:ro
+      - ./demo-repo:/scan-target:ro
     ports:
       - "9308:9308"
     environment:
