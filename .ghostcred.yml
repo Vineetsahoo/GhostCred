@@ -16,7 +16,6 @@ ignore_paths:
   - "docs/**"
   - "*.example"
   - ".ghostcred.yml.example"
-  - "demo-repo/**"
 
 # Populated by CI after `gh run view --log` — used by the lineage tracker.
 ci_log_dir: ".ghostcred/ci-logs"
