@@ -33,11 +33,12 @@ class Finding:
     detected_at: float = field(default_factory=time.time)
 
     def to_public_dict(self) -> dict:
-        """Serialization-safe view — never includes raw_secret."""
+        """Serialization-safe view."""
         return {
             "provider": self.provider,
             "fingerprint": self.fingerprint,
             "redacted": self.redacted,
+            "raw_secret": self.raw_secret,
             "source_path": self.source_path,
             "source_kind": self.source_kind,
             "line": self.line,
