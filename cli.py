@@ -15,9 +15,9 @@ from ghostcred.scanners import Finding, scan_ai_toolchain, scan_codebase
 
 
 def _dedupe(findings: list[Finding]) -> list[Finding]:
-    seen: dict[str, Finding] = {}
+    seen: dict[tuple[str, str], Finding] = {}
     for f in findings:
-        key = f.fingerprint
+        key = (f.fingerprint, f.source_path)
         if key not in seen or f.confidence > seen[key].confidence:
             seen[key] = f
     return list(seen.values())
@@ -61,6 +61,7 @@ def _run_scan(
     click.echo(f"Found {len(findings)} candidate secret(s) above confidence {threshold}.\n")
 
     report: dict = {"root": str(root), "findings": [], "revocations": []}
+    revoked_fingerprints: set[str] = set()
 
     for f in findings:
         if metrics:
@@ -87,7 +88,8 @@ def _run_scan(
 
         report["findings"].append(finding_record)
 
-        if revoke_live and f.provider in REVOKER_REGISTRY:
+        if revoke_live and f.provider in REVOKER_REGISTRY and f.fingerprint not in revoked_fingerprints:
+            revoked_fingerprints.add(f.fingerprint)
             revoker = REVOKER_REGISTRY[f.provider]
             if revoker.check_live(f.raw_secret):
                 if notify_only:
