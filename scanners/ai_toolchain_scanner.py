@@ -57,8 +57,7 @@ def _project_local_ai_configs(root: Path, ignore_paths: list[str] | None = None)
             continue
             
         for pattern in AI_TOOLCHAIN_GLOBS:
-            stripped = pattern.lstrip("*").lstrip("/")
-            if fnmatch.fnmatch(rel, stripped):
+            if fnmatch.fnmatch(rel, pattern) or fnmatch.fnmatch(rel, pattern.lstrip("*").lstrip("/")):
                 matches.append(path)
                 break
             p = Path(pattern)

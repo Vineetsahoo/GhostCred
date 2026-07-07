@@ -30,9 +30,8 @@ def _is_ai_toolchain_file(path: Path, root: Path) -> bool:
         rel = path.name
 
     for pattern in AI_TOOLCHAIN_GLOBS:
-        # Strip leading **/ to get a matchable suffix pattern, then check relative path.
-        stripped = pattern.lstrip("*").lstrip("/")
-        if fnmatch.fnmatch(rel, stripped):
+        # Check against both the full glob pattern and a stripped version for root files.
+        if fnmatch.fnmatch(rel, pattern) or fnmatch.fnmatch(rel, pattern.lstrip("*").lstrip("/")):
             return True
 
         # Filename-only shortcut: only safe when the pattern has no directory component
