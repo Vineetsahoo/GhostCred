@@ -13,6 +13,14 @@ OpenAI, Anthropic) the moment it's confirmed live.
 
 ---
 
+## Recent Updates
+
+- **Enhanced JSON Reports:** The `--json-out` reports now include the `raw_secret` alongside findings, allowing downstream tools to seamlessly verify or redact the true leak data.
+- **Deep AI Toolchain Scanning:** Fixed recursive globbing to reliably uncover MCP configs, IDE settings, and agent logs nested deeply within subdirectories.
+- **Precise Leak De-duplication:** Findings are now grouped by both cryptographic fingerprint and source path, ensuring identical secrets are reported accurately without omitting occurrences across different files.
+
+---
+
 ## Three things, together, that nobody else does
 
 | # | Capability | What it means |
