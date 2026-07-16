@@ -25,7 +25,8 @@ COPY revocation/ ./ghostcred_src/revocation/
 COPY metrics/ ./ghostcred_src/metrics/
 
 # Rewrite the package path for the container install.
-RUN pip install --no-cache-dir click requests pyyaml prometheus-client
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir click requests pyyaml prometheus-client
 
 # Install directly from the copied sources.
 COPY . /app/ghostcred_build/
