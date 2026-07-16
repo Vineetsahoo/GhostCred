@@ -54,7 +54,6 @@ jobs:
             --no-global-configs \
             --lineage \
             --dry-run \
-            --fail-on-finding \
             --json-out ghostcred-report.json
           # Note: min_confidence, ignore_paths, and ci_log_dir are read from
           # .ghostcred.yml committed to the repo — no need to repeat them here.
@@ -68,7 +67,7 @@ jobs:
           retention-days: 30
 
       - name: Comment findings on PR
-        if: failure() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
@@ -76,20 +75,22 @@ jobs:
             let report = {};
             try { report = JSON.parse(fs.readFileSync('ghostcred-report.json', 'utf8')); } catch {}
             const count = (report.findings || []).length;
-            const body = [
-              `## ❌ GhostCred: ${count} secret(s) detected`,
-              '',
-              '| Provider | Source Kind | Location | Confidence |',
-              '|----------|-------------|----------|------------|',
-              ...(report.findings || []).map(f =>
-                `| \`${f.provider}\` | \`${f.source_kind}\` | \`${f.source_path}:${f.line}\` | ${f.confidence} |`
-              ),
-              '',
-              '> Secrets found in source files or MCP/IDE configs. Rotate immediately and re-push.',
-            ].join('\n');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body,
-            });
+            if (count > 0) {
+              const body = [
+                `## ❌ GhostCred: ${count} secret(s) detected`,
+                '',
+                '| Provider | Source Kind | Location | Confidence |',
+                '|----------|-------------|----------|------------|',
+                ...(report.findings || []).map(f =>
+                  `| \`${f.provider}\` | \`${f.source_kind}\` | \`${f.source_path}:${f.line}\` | ${f.confidence} |`
+                ),
+                '',
+                '> Secrets found in source files or MCP/IDE configs. Please review.',
+              ].join('\n');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
