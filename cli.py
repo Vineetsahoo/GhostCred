@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -9,8 +10,16 @@ import click
 
 from ghostcred.config import GhostCredConfig
 from ghostcred.lineage import build_lineage
-from ghostcred.metrics import record_blast_radius, record_finding, record_revocation, record_scan_duration, serve_metrics
+from ghostcred.metrics import (
+    record_blast_radius,
+    record_finding,
+    record_revocation,
+    record_scan_duration,
+    record_ttr,
+    serve_metrics,
+)
 from ghostcred.revocation import REVOKER_REGISTRY
+from ghostcred.rotation import ROTATORS
 from ghostcred.scanners import Finding, scan_ai_toolchain, scan_codebase
 
 
@@ -35,6 +44,7 @@ def _run_scan(
     json_out: str | None,
     fail_on_finding: bool,
     metrics: bool,
+    rotate_manager: str | None = None,
     grace_period: int = 0,
     notify_only: bool = False,
 ) -> int:
@@ -102,14 +112,31 @@ def _run_scan(
                             time.sleep(1)
                             click.echo("\r", nl=False)
                             
-                    result = revoker.revoke(f.raw_secret, f.fingerprint, dry_run=effective_dry_run)
-                    click.echo(
-                        f"      🔒 revocation: {result.detail} "
-                        f"(success={result.success}, dry_run={result.dry_run})"
-                    )
-                    if metrics:
-                        record_revocation(f.provider, result.success)
-                    report["revocations"].append(result.__dict__)
+                    proceed = True
+                    if rotate_manager and rotate_manager in ROTATORS:
+                        click.echo(f"      🔄 Initiating pre-revocation rotation via {rotate_manager}...")
+                        rotator = ROTATORS[rotate_manager]
+                        proceed = rotator.rotate(f.provider, f.fingerprint, dry_run=effective_dry_run)
+                        if not proceed:
+                            click.echo("      ❌ Rotation failed. Aborting revocation to prevent pipeline breakage.")
+
+                    if proceed:
+                        result = revoker.revoke(f.raw_secret, f.fingerprint, dry_run=effective_dry_run)
+                        click.echo(
+                            f"      🔒 revocation: {result.detail} "
+                            f"(success={result.success}, dry_run={result.dry_run})"
+                        )
+                        if metrics:
+                            record_revocation(f.provider, result.success)
+                            if result.success and not effective_dry_run:
+                                try:
+                                    mtime = os.stat(f.source_path).st_mtime
+                                    ttr = max(0.0, time.time() - mtime)
+                                    record_ttr(ttr)
+                                except OSError:
+                                    pass
+                                    
+                        report["revocations"].append(result.__dict__)
             else:
                 click.echo("      ✓ secret already inactive/rotated — no action needed")
 
@@ -150,6 +177,7 @@ def main() -> None:
 @click.option("--json-out", type=click.Path(), default=None, help="Write full JSON report to this path.")
 @click.option("--fail-on-finding", is_flag=True, default=False, help="Exit non-zero if any finding above threshold is present (CI PR blocking).")
 @click.option("--metrics/--no-metrics", default=False, help="Expose Prometheus metrics on scan completion.")
+@click.option("--rotate-manager", type=click.Choice(list(ROTATORS.keys())), help="Rotation manager to use before revoking.")
 @click.option("--grace-period", default=0, type=int, help="Seconds to wait before revoking a live secret.")
 @click.option("--notify-only", is_flag=True, default=False, help="Send alerts instead of actually revoking live secrets.")
 def scan(
@@ -163,6 +191,7 @@ def scan(
     json_out: str | None,
     fail_on_finding: bool,
     metrics: bool,
+    rotate_manager: str | None,
     grace_period: int,
     notify_only: bool,
 ) -> None:
@@ -183,6 +212,7 @@ def scan(
         json_out=json_out,
         fail_on_finding=fail_on_finding,
         metrics=metrics,
+        rotate_manager=rotate_manager,
         grace_period=grace_period,
         notify_only=notify_only,
     )
@@ -233,8 +263,9 @@ def watch(
 @click.argument("secret", envvar="GHOSTCRED_SECRET")
 @click.option("--provider", required=True, type=click.Choice(list(REVOKER_REGISTRY.keys())), help="Secret provider.")
 @click.option("--fingerprint", "fp", default="manual", help="Fingerprint label for the report.")
+@click.option("--rotate-manager", type=click.Choice(list(ROTATORS.keys())), help="Rotation manager to use before revoking.")
 @click.option("--dry-run/--no-dry-run", default=True, help="Log intent only; don't call the revocation API.")
-def revoke(secret: str, provider: str, fp: str, dry_run: bool) -> None:
+def revoke(secret: str, provider: str, fp: str, rotate_manager: str | None, dry_run: bool) -> None:
     """Manually revoke a single known secret at its provider.
 
     Pass the secret via the GHOSTCRED_SECRET env var or as a positional argument.
@@ -250,6 +281,14 @@ def revoke(secret: str, provider: str, fp: str, dry_run: bool) -> None:
         click.echo("✓ Secret appears inactive/rotated — nothing to revoke.")
         return
     click.echo(f"⚠️  Secret is LIVE. Revoking (dry_run={dry_run}) ...")
+    
+    if rotate_manager and rotate_manager in ROTATORS:
+        click.echo(f"      🔄 Initiating pre-revocation rotation via {rotate_manager}...")
+        rotator = ROTATORS[rotate_manager]
+        if not rotator.rotate(provider, fp, dry_run=dry_run):
+            click.echo("      ❌ Rotation failed. Aborting revocation to prevent pipeline breakage.")
+            return
+
     result = revoker.revoke(secret, fp, dry_run=dry_run)
     status = "✅" if result.success else "❌"
     click.echo(f"{status} {result.detail}")
@@ -261,6 +300,28 @@ def list_providers() -> None:
     click.echo("Providers with GhostCred auto-revocation support:\n")
     for name, revoker in REVOKER_REGISTRY.items():
         click.echo(f"  • {name}")
+
+
+@main.command("plant-decoys")
+@click.option("--path", "path_", default=".", help="Root directory to plant decoys.")
+def plant_decoys(path_: str) -> None:
+    """Actively plant honeytokens (fake secrets) in AI toolchain locations."""
+    from ghostcred.decoys import DecoyGenerator
+    
+    root = Path(path_).resolve()
+    click.echo(f"🍯 Planting decoys in {root} ...")
+    
+    results = DecoyGenerator.plant_decoys(root)
+    
+    if not results:
+        click.echo("  No suitable locations found for planting.")
+        return
+        
+    for p, count in results.items():
+        click.echo(f"  ✓ Planted {count} decoys in {p}")
+    
+    total = sum(results.values())
+    click.echo(f"\n✅ Successfully planted {total} honeytokens.")
 
 
 if __name__ == "__main__":
