@@ -89,6 +89,18 @@ PATTERNS: list[SecretPattern] = [
         base_confidence=0.5,
         revocable=False,
     ),
+    SecretPattern(
+        provider="prompt_injection",
+        regex=re.compile(r"(?i)(ignore previous instructions|you are a helpful assistant|system prompt:)"),
+        base_confidence=0.8,
+        revocable=False,
+    ),
+    SecretPattern(
+        provider="malicious_mcp_config",
+        regex=re.compile(r"(?i)(bash -i|nc -e|curl .* \| bash)"),
+        base_confidence=0.9,
+        revocable=False,
+    ),
 ]
 
 # Keywords that boost confidence when found within ~40 chars of a candidate match.
