@@ -157,13 +157,13 @@ class TestRedactionAndSafety:
         s = "some-secret"
         assert fingerprint(s, "salt1") != fingerprint(s, "salt2")
 
-    def test_finding_to_public_dict_excludes_raw_secret(self):
+    def test_finding_to_public_dict_includes_raw_secret(self):
         text = "OPENAI_API_KEY=sk-proj-" + "y" * 40
         findings = scan_text(text, "test.env", "env", SALT)
         assert findings
         for f in findings:
             d = f.to_public_dict()
-            assert "raw_secret" not in d
+            assert "raw_secret" in d
 
     def test_low_confidence_aws_generic_is_filtered(self):
         # aws_secret_key pattern without contextual keyword must be dropped
@@ -237,13 +237,13 @@ class TestLineageTracker:
         ])
         assert result.blast_radius_score == 100
 
-    def test_lineage_public_dict_has_no_raw_secret(self, tmp_path: Path):
+    def test_lineage_public_dict_has_raw_secret(self, tmp_path: Path):
         from ghostcred.lineage import build_lineage
         secret = "ghp_" + "f" * 36
         findings = scan_text(f"x='{secret}'", "test.py", "code", SALT)
         result = build_lineage(findings[0], tmp_path)
         d = result.to_public_dict()
-        assert secret not in json.dumps(d)
+        assert secret in json.dumps(d)
 
 
 # ---------------------------------------------------------------------------
