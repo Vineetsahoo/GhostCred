@@ -1,4 +1,4 @@
-from ghostcred.metrics.prometheus_exporter import (
+from .prometheus_exporter import (
     record_blast_radius,
     record_finding,
     record_revocation,
