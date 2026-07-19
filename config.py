@@ -21,6 +21,7 @@ class GhostCredConfig:
     ignore_paths: list[str] = field(default_factory=list)
     ci_log_dir: str | None = None
     docker_image_tags: list[str] = field(default_factory=list)
+    webhook_url: str | None = None
     salt: str = field(default_factory=lambda: os.environ.get("GHOSTCRED_SALT") or secrets.token_hex(16))
 
     @classmethod
