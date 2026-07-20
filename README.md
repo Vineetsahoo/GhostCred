@@ -212,4 +212,3 @@ Since GhostCred is designed to detect and auto-revoke highly sensitive credentia
 1. **Secure Secret Management**: The credentials GhostCred uses for auto-revocation (e.g., GitHub Admin PAT, OpenAI API Key) must be strictly protected. Inject them at runtime using systems like **HashiCorp Vault**, **AWS Secrets Manager**, or **GitHub OIDC**, rather than storing them in local `.env` files.
 2. **Least Privilege Execution**: When running GhostCred in CI/CD, heavily scope its permissions. In GitHub Actions, ensure the workflow only has `contents: read` access to the repository unless write access is absolutely necessary. It only needs outbound network access to the specific provider APIs for revocation.
 3. **Audit Logging**: While GhostCred outputs JSON reports, ensure you pipe these logs (especially when a revocation occurs) into a SIEM (like Datadog, Splunk, or ELK) to maintain an immutable audit trail of what was revoked, when, and the blast radius graph.
-

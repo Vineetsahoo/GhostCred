@@ -25,6 +25,11 @@ SCAN_DURATION = Histogram(
     "Time taken for a full scan run",
     buckets=[1, 5, 10, 30, 60, 120, 300],
 )
+TIME_TO_REMEDIATION = Histogram(
+    "ghostcred_time_to_remediation_seconds",
+    "Time elapsed between secret creation (file mtime) and successful revocation",
+    buckets=[1, 10, 60, 300, 3600, 86400, 604800],
+)
 
 _metrics_server_started = False
 
@@ -43,6 +48,10 @@ def record_revocation(provider: str, success: bool) -> None:
 
 def record_scan_duration(duration_seconds: float) -> None:
     SCAN_DURATION.observe(duration_seconds)
+
+
+def record_ttr(ttr_seconds: float) -> None:
+    TIME_TO_REMEDIATION.observe(ttr_seconds)
 
 
 @contextmanager

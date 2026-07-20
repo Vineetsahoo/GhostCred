@@ -1,0 +1,22 @@
+{
+    "name": "GhostCred Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    },
+    "postCreateCommand": "pip install -e .[dev]",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "njpwerner.autodocstring",
+                "esbenp.prettier-vscode"
+            ],
+            "settings": {
+                "python.formatting.provider": "black",
+                "python.testing.pytestEnabled": true
+            }
+        }
+    }
+}

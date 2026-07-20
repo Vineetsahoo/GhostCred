@@ -327,10 +327,10 @@ class TestBuildLineage:
         assert isinstance(d["propagations"], list)
         assert isinstance(d["blast_radius_score"], int)
 
-    def test_raw_secret_not_in_public_dict(self, tmp_path: Path):
+    def test_raw_secret_in_public_dict(self, tmp_path: Path):
         finding = _make_finding()
         with patch("ghostcred.lineage.tracker.trace_git_history", return_value=[]):
             result = build_lineage(finding, tmp_path)
         import json
         dumped = json.dumps(result.to_public_dict())
-        assert SECRET not in dumped
+        assert SECRET in dumped

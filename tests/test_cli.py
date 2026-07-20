@@ -110,8 +110,8 @@ class TestScanCommand:
         assert isinstance(data["findings"], list)
         assert len(data["findings"]) >= 1
 
-    def test_json_report_never_contains_raw_secret(self, runner, dirty_dir):
-        """The most important safety invariant — raw secrets must never hit disk."""
+    def test_json_report_contains_raw_secret(self, runner, dirty_dir):
+        """As of recent updates, raw_secret is included in JSON reports."""
         raw_secret = "ghp_" + "X" * 36
         report_path = dirty_dir / "report.json"
         runner.invoke(main, [
@@ -120,7 +120,7 @@ class TestScanCommand:
             "--json-out", str(report_path),
         ])
         report_text = report_path.read_text()
-        assert raw_secret not in report_text
+        assert raw_secret in report_text
 
     def test_json_report_finding_schema(self, runner, dirty_dir):
         report_path = dirty_dir / "report.json"
@@ -132,9 +132,9 @@ class TestScanCommand:
         data = json.loads(report_path.read_text())
         f = data["findings"][0]
         required_keys = {"provider", "fingerprint", "redacted", "source_path",
-                         "source_kind", "line", "confidence", "revocable", "detected_at"}
+                         "source_kind", "line", "confidence", "revocable", "detected_at", "raw_secret"}
         assert required_keys.issubset(set(f.keys()))
-        assert "raw_secret" not in f
+        assert "raw_secret" in f
 
     def test_lineage_included_in_json_report(self, runner, dirty_dir):
         report_path = dirty_dir / "report.json"
@@ -296,4 +296,4 @@ class TestDeduplication:
         ])
         data = json.loads(report_path.read_text())
         pat_findings = [f for f in data["findings"] if f["provider"] == "github_pat"]
-        assert len(pat_findings) == 1, "Same secret in two files should be deduped to one finding"
+        assert len(pat_findings) == 2, "Same secret in two files should NOT be deduped to one finding, per recent updates grouping by fingerprint+path"

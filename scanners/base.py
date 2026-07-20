@@ -5,7 +5,15 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ghostcred.scanners.patterns import CONTEXT_KEYWORDS, PATTERNS
+from ghostcred.scanners.patterns import CONTEXT_KEYWORDS
+from ghostcred.plugin_manager import pm, load_plugins
+
+def get_patterns():
+    load_plugins()
+    patterns = []
+    for p_list in pm.hook.ghostcred_register_patterns():
+        patterns.extend(p_list)
+    return patterns
 
 
 def fingerprint(secret: str, salt: str) -> str:
@@ -53,7 +61,7 @@ def scan_text(text: str, source_path: str, source_kind: str, salt: str) -> list[
     findings: list[Finding] = []
     lines = text.splitlines()
 
-    for pattern in PATTERNS:
+    for pattern in get_patterns():
         for match in pattern.regex.finditer(text):
             secret = match.group(0)
             start = match.start()

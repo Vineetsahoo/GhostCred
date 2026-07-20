@@ -1,0 +1,24 @@
+name: New Provider Request
+description: Request a new secret provider to be added to GhostCred
+labels: ["enhancement", "provider"]
+body:
+  - type: markdown
+    attributes:
+      value: "Want to add a new provider? Let us know the details!"
+  - type: input
+    id: provider
+    attributes:
+      label: Provider Name
+      description: e.g. AWS, GitLab, Stripe
+    validations:
+      required: true
+  - type: textarea
+    id: pattern
+    attributes:
+      label: Secret Pattern
+      description: Do you have a regex pattern for this secret?
+  - type: textarea
+    id: revocation
+    attributes:
+      label: Revocation API
+      description: Provide a link to the provider's API docs for revoking this credential.
