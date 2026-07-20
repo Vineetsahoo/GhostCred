@@ -18,7 +18,9 @@ from ghostcred.metrics import (
     record_ttr,
     serve_metrics,
 )
-from ghostcred.revocation import REVOKER_REGISTRY
+from ghostcred.revocation import get_revoker_registry
+
+REVOKER_REGISTRY = get_revoker_registry()
 from ghostcred.rotation import ROTATORS
 from ghostcred.scanners import Finding, scan_ai_toolchain, scan_codebase
 
