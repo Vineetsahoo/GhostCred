@@ -13,7 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0,<9",
+    "pytest>=8.0,<10",
     "pytest-cov>=5.0,<6",
     "hypothesis>=6.98,<7",
     "mutmut>=2.4,<3",
