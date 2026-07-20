@@ -279,11 +279,11 @@ class TestRevocationMocked:
         with patch("ghostcred.revocation.github_revoker.requests.get") as mock_get:
             mock_get.side_effect = requests.RequestException("timeout")
             assert revoker.check_live("ghp_fake") is False
-        from ghostcred.revocation import REVOKER_REGISTRY
+        from ghostcred.revocation import get_revoker_registry
         # AWS is excluded until the AWS account deployment is set up.
         expected = {"github_pat", "github_fine_grained_pat", "openai_api_key", "anthropic_api_key"}
-        assert expected.issubset(set(REVOKER_REGISTRY.keys()))
-        assert "aws_access_key" not in REVOKER_REGISTRY
+        assert expected.issubset(set(get_revoker_registry().keys()))
+        assert "aws_access_key" not in get_revoker_registry()
 
 
 # ---------------------------------------------------------------------------
