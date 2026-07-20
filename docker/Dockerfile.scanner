@@ -8,7 +8,7 @@
 # Usage (pre-build guard):
 #   scripts/docker-build-guard.sh <real docker build args>
 
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
