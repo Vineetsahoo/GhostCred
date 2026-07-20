@@ -127,3 +127,9 @@ SHELL_HISTORY_FILES = [
     "~/.bash_history",
     "~/.local/share/fish/fish_history",
 ]
+
+from ghostcred.plugin_specs import hookimpl
+
+@hookimpl
+def ghostcred_register_patterns():
+    return PATTERNS
