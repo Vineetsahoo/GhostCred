@@ -96,6 +96,18 @@ PATTERNS: list[SecretPattern] = [
         revocable=False,
     ),
     SecretPattern(
+        provider="jwt_token",
+        regex=re.compile(r"eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}"),
+        base_confidence=0.85,
+        revocable=False,
+    ),
+    SecretPattern(
+        provider="database_uri",
+        regex=re.compile(r"(?i)(?:postgres|postgresql|mysql|mongodb|redis|rediss|amqp|amqps)://[a-zA-Z0-9_.-]+:[^@/\s]+@[a-zA-Z0-9_.-]+(?::\d+)?(?:/[a-zA-Z0-9_.-]+)?"),
+        base_confidence=0.9,
+        revocable=False,
+    ),
+    SecretPattern(
         provider="malicious_mcp_config",
         regex=re.compile(r"(?i)(bash -i|nc -e|curl .* \| bash)"),
         base_confidence=0.9,
