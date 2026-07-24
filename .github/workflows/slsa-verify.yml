@@ -5,6 +5,7 @@ on:
     types: [published]
   schedule:
     - cron: '0 0 * * *' # Run daily to ensure the latest release remains valid
+  workflow_dispatch:
 
 permissions:
   contents: read
