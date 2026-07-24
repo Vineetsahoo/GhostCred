@@ -1,0 +1,67 @@
+name: SLSA Verification & Audit
+
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: '0 0 * * *' # Run daily to ensure the latest release remains valid
+
+permissions:
+  contents: read
+
+jobs:
+  verify-slsa:
+    name: Verify SLSA Provenance and SBOM Signatures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.4.0
+
+      - name: Install slsa-verifier
+        uses: slsa-framework/slsa-verifier/actions/installer@v2.6.0
+
+      - name: Fetch latest release information
+        id: get_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release view --repo ${{ github.repository }} --json tagName -q .tagName || echo "none")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Download Release SBOM
+        if: steps.get_release.outputs.tag != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download ${{ steps.get_release.outputs.tag }} \
+            --repo ${{ github.repository }} \
+            --pattern "ghostcred-sbom.spdx.json*" \
+            --dir artifacts || echo "SBOM not found for release"
+
+      - name: Verify Docker Image Signature
+        if: steps.get_release.outputs.tag != 'none'
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp="https://github.com/Vineetsahoo/GhostCred/.*" \
+            ghcr.io/${{ github.repository }}:${{ steps.get_release.outputs.tag }}
+
+      - name: Verify SBOM Signature
+        if: steps.get_release.outputs.tag != 'none'
+        run: |
+          if [ -f "artifacts/ghostcred-sbom.spdx.json.sig" ]; then
+            cosign verify-blob \
+              --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+              --certificate-identity-regexp="https://github.com/Vineetsahoo/GhostCred/.*" \
+              --bundle artifacts/ghostcred-sbom.spdx.json.sig \
+              artifacts/ghostcred-sbom.spdx.json
+          else
+            echo "No signed SBOM to verify."
+          fi
+
+      - name: Verify Docker Image SLSA Provenance
+        if: steps.get_release.outputs.tag != 'none'
+        run: |
+          slsa-verifier verify-image ghcr.io/${{ github.repository }}:${{ steps.get_release.outputs.tag }} \
+            --source-uri "github.com/${{ github.repository }}" \
+            --builder-id "https://github.com/actions/runner-environment"
