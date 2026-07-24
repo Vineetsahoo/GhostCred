@@ -133,6 +133,18 @@ class TestOtherProviderPatterns:
         findings = scan_text("-----BEGIN PRIVATE KEY-----", "x.py", "code", SALT)
         assert any(f.provider == "private_key_block" for f in findings)
 
+    def test_jwt_token(self):
+        findings = scan_text("token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "x.py", "code", SALT)
+        assert any(f.provider == "jwt_token" for f in findings)
+
+    def test_database_uri_postgres(self):
+        findings = scan_text("DB_URL=postgresql://user:mypassword123@localhost:5432/mydb", "x.env", "env", SALT)
+        assert any(f.provider == "database_uri" for f in findings)
+
+    def test_database_uri_redis(self):
+        findings = scan_text("cache=redis://default:redispwd!@10.0.0.1:6379", "x.yaml", "code", SALT)
+        assert any(f.provider == "database_uri" for f in findings)
+
 
 # ---------------------------------------------------------------------------
 # False-positive guards
