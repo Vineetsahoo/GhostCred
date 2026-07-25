@@ -39,13 +39,16 @@ jobs:
             --pattern "ghostcred-sbom.spdx.json*" \
             --dir artifacts || echo "SBOM not found for release"
 
+      - name: Set lowercase repository name
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Verify Docker Image Signature
         if: steps.get_release.outputs.tag != 'none'
         run: |
           cosign verify \
             --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
             --certificate-identity-regexp="https://github.com/Vineetsahoo/GhostCred/.*" \
-            ghcr.io/${{ github.repository }}:${{ steps.get_release.outputs.tag }}
+            ghcr.io/${{ env.REPO_LC }}:${{ steps.get_release.outputs.tag }}
 
       - name: Verify SBOM Signature
         if: steps.get_release.outputs.tag != 'none'
@@ -63,6 +66,6 @@ jobs:
       - name: Verify Docker Image SLSA Provenance
         if: steps.get_release.outputs.tag != 'none'
         run: |
-          slsa-verifier verify-image ghcr.io/${{ github.repository }}:${{ steps.get_release.outputs.tag }} \
+          slsa-verifier verify-image ghcr.io/${{ env.REPO_LC }}:${{ steps.get_release.outputs.tag }} \
             --source-uri "github.com/${{ github.repository }}" \
             --builder-id "https://github.com/actions/runner-environment"
