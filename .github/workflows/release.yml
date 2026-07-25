@@ -48,18 +48,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercase repository name
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          tags: ghcr.io/${{ env.REPO_LC }}:latest, ghcr.io/${{ env.REPO_LC }}:${{ github.ref_name }}
           
       - name: Generate SLSA Provenance for Docker Image
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: ghcr.io/${{ github.repository }}
+          subject-name: ghcr.io/${{ env.REPO_LC }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -67,12 +70,12 @@ jobs:
         uses: sigstore/cosign-installer@v3.4.0
 
       - name: Sign Docker image
-        run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build-and-push.outputs.digest }}
+        run: cosign sign --yes ghcr.io/${{ env.REPO_LC }}@${{ steps.build-and-push.outputs.digest }}
 
       - name: Generate SBOM (Syft)
         uses: anchore/sbom-action@v0.15.8
         with:
-          image: ghcr.io/${{ github.repository }}@${{ steps.build-and-push.outputs.digest }}
+          image: ghcr.io/${{ env.REPO_LC }}@${{ steps.build-and-push.outputs.digest }}
           format: spdx-json
           output-file: ghostcred-sbom.spdx.json
 
