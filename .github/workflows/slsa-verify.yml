@@ -65,7 +65,8 @@ jobs:
 
       - name: Verify Docker Image SLSA Provenance
         if: steps.get_release.outputs.tag != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          slsa-verifier verify-image ghcr.io/${{ env.REPO_LC }}:${{ steps.get_release.outputs.tag }} \
-            --source-uri "github.com/${{ github.repository }}" \
-            --builder-id "https://github.com/actions/runner-environment"
+          gh attestation verify oci://ghcr.io/${{ env.REPO_LC }}:${{ steps.get_release.outputs.tag }} \
+            --repo ${{ github.repository }}
