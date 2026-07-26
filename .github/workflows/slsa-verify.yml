@@ -48,7 +48,7 @@ jobs:
           cosign verify \
             --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
             --certificate-identity-regexp="https://github.com/Vineetsahoo/GhostCred/.*" \
-            ghcr.io/${{ env.REPO_LC }}:${{ steps.get_release.outputs.tag }}
+            ghcr.io/${REPO_LC}:${{ steps.get_release.outputs.tag }}
 
       - name: Verify SBOM Signature
         if: steps.get_release.outputs.tag != 'none'
@@ -68,5 +68,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh attestation verify oci://ghcr.io/${{ env.REPO_LC }}:${{ steps.get_release.outputs.tag }} \
+          gh attestation verify oci://ghcr.io/${REPO_LC}:${{ steps.get_release.outputs.tag }} \
             --repo ${{ github.repository }}
