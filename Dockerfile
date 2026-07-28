@@ -5,7 +5,7 @@ WORKDIR /build
 
 # Install build dependencies
 COPY pyproject.toml .
-COPY ghostcred/ ghostcred/
+COPY . .
 COPY tests/ tests/
 COPY *.py .
 
