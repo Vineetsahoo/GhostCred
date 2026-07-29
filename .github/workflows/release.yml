@@ -81,7 +81,9 @@ jobs:
         with:
           image: ghcr.io/${{ env.REPO_LC }}@${{ steps.build-and-push.outputs.digest }}
           format: spdx-json
+          artifact-name: ghostcred-sbom.spdx.json
           output-file: ghostcred-sbom.spdx.json
+          upload-release-assets: false
 
       - name: Sign SBOM
         run: cosign sign-blob --yes ghostcred-sbom.spdx.json --bundle ghostcred-sbom.spdx.json.sig
