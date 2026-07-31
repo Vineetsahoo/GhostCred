@@ -1,0 +1,68 @@
+# ── Build artifacts & caches ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+MANIFEST
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Version control ──────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Test & coverage ──────────────────────────────────────────────────────────
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+test-results/
+.mypy_cache/
+
+# ── CI / CD ──────────────────────────────────────────────────────────────────
+.github/
+.ghostcred/
+
+# ── Environment & secrets ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Docker internals ─────────────────────────────────────────────────────────
+docker/
+Dockerfile
+docker-compose.yml
+
+# ── Docs & non-runtime ───────────────────────────────────────────────────────
+docs/
+demo-repo/
+grafana/
+grafana-data/
+prometheus/
+*.md
+!README.md
+LICENSE
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.log
+.DS_Store
+Thumbs.db

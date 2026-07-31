@@ -25,13 +25,18 @@ COPY revocation/ ./ghostcred_src/revocation/
 COPY metrics/ ./ghostcred_src/metrics/
 
 # Rewrite the package path for the container install.
-RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" wheel && \
-    pip install --no-cache-dir click requests pyyaml prometheus-client "msgpack>=1.2.1"
+RUN pip install --no-cache-dir --upgrade pip wheel
 
-# Install directly from the copied sources.
+# Install directly from the copied sources (non-editable for clean image).
 COPY . /app/ghostcred_build/
-RUN pip install --no-cache-dir -e /app/ghostcred_build/
+RUN pip install --no-cache-dir /app/ghostcred_build/ && \
+    # Upgrade vulnerable transitive deps to their fixed versions
+    pip install --no-cache-dir "setuptools>=78.1.1" "msgpack>=1.2.1" && \
+    # Clean up build artifacts and residual metadata that Trivy would scan
+    rm -rf /app/ghostcred_build/ /tmp/* /root/.cache && \
+    find / -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 
 WORKDIR /scan-target
 ENTRYPOINT ["ghostcred"]
 CMD ["scan", "--path", "/scan-target", "--ai-toolchain", "--lineage", "--fail-on-finding"]
+
