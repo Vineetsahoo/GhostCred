@@ -45,17 +45,18 @@ ghostcred plant-decoys --path .
 - Metrics and observability: [metrics/README.md](metrics/README.md)
 - Dev scripts and local guards: [scripts/README.md](scripts/README.md)
 - Testing strategy and suite layout: [tests/README.md](tests/README.md)
-- GitHub automation, workflow, and dependency-update policy: [.github/README.md](.github/README.md)
 - Release and supply-chain checks: [.github/workflows/release.yml](.github/workflows/release.yml), [.github/workflows/security.yml](.github/workflows/security.yml), [.github/workflows/slsa-verify.yml](.github/workflows/slsa-verify.yml)
 - Architecture overview: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## Security and maintenance
 
-- Security scanning runs in [.github/workflows/security.yml](.github/workflows/security.yml).
+- Security scanning runs in [.github/workflows/security.yml](.github/workflows/security.yml) and includes SAST plus container vulnerability checks.
+- Secret scanning runs in [.github/workflows/ghostcred-scan.yml](.github/workflows/ghostcred-scan.yml) to block risky pull requests and comment on findings.
 - Release signing, SBOM generation, and provenance attachment run in [.github/workflows/release.yml](.github/workflows/release.yml).
 - Release verification runs in [.github/workflows/slsa-verify.yml](.github/workflows/slsa-verify.yml).
 - Dependabot updates Python and Docker dependencies weekly through [.github/dependabot.yml](.github/dependabot.yml).
-- Pull requests are expected to include tests and documentation updates when behavior changes.
+- Pull requests are expected to include tests and documentation updates when behavior changes, following [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md).
+- New bug reports and provider requests are collected through [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/).
 
 ## Operational notes
 
