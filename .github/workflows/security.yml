@@ -33,7 +33,7 @@ jobs:
       - name: Build Scanner Image
         run: docker build --no-cache -t ghostcred:latest -f docker/Dockerfile.scanner .
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.31.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'ghostcred:latest'
           scanners: 'vuln'
@@ -42,4 +42,6 @@ jobs:
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
           timeout: '10m'
+          version: 'v0.70.0'
+
 
