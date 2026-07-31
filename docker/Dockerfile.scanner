@@ -14,32 +14,26 @@ WORKDIR /app
 
 # Copy only what's needed to install the package.
 COPY pyproject.toml README.md ./
-
-# Copy the package source. At the repo root, the Python package is in the
-# directory that contains cli.py, config.py, scanners/, lineage/, etc.
-# We map it to ghostcred/ so setuptools can find it.
 COPY cli.py config.py __init__.py ./ghostcred_src/
 COPY scanners/ ./ghostcred_src/scanners/
 COPY lineage/ ./ghostcred_src/lineage/
 COPY revocation/ ./ghostcred_src/revocation/
 COPY metrics/ ./ghostcred_src/metrics/
 
-# Upgrade pip, setuptools, and wheel FIRST — before any package build step.
-# This ensures the wheel build backend never sees the vulnerable setuptools
-# (70.x) that ships with the base image. msgpack is pinned here too so the
-# patched version is present before ghostcred's own install resolves it.
-RUN pip install --no-cache-dir --upgrade \
-        pip \
-        "setuptools>=78.1.1" \
-        "wheel" \
-        "msgpack>=1.2.1"
+# Upgrade pip + build toolchain FIRST, before any package build step.
+# Pin setuptools to >=78.1.1 (fixes CVE-2025-47273) and explicitly install
+# msgpack>=1.2.1 (fixes GHSA-6v7p-g79w-8964) so the patched wheel is present
+# before the ghostcred install runs.  The base image ships setuptools 70.x
+# and has no msgpack at all — this step replaces both with safe versions.
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" wheel && \
+    pip install --no-cache-dir \
+        click requests pyyaml "prometheus-client" "pluggy>=1.4,<2" "msgpack>=1.2.1"
 
-# Install the package from source. Because setuptools is already at >=78.1.1
-# at this point, the build backend will NOT downgrade it or leave stale
-# dist-info from the old version.
+# Install directly from the copied sources.
 COPY . /app/ghostcred_build/
 RUN pip install --no-cache-dir /app/ghostcred_build/ && \
-    rm -rf /app/ghostcred_build/ /tmp/* /root/.cache
+    pip uninstall -y pip && \
+    rm -rf /app/ghostcred_build/ /usr/local/lib/python3.14/ensurepip
 
 WORKDIR /scan-target
 ENTRYPOINT ["ghostcred"]
