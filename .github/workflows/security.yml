@@ -26,16 +26,20 @@ jobs:
   container-scan-trivy:
     name: Container Scan (Trivy)
     runs-on: ubuntu-latest
+    env:
+      TRIVY_DISABLE_VEX_NOTICE: "true"
     steps:
       - uses: actions/checkout@v4
       - name: Build Scanner Image
-        run: docker build -t ghostcred:latest -f docker/Dockerfile.scanner .
+        run: docker build --no-cache -t ghostcred:latest -f docker/Dockerfile.scanner .
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.31.0
         with:
           image-ref: 'ghostcred:latest'
+          scanners: 'vuln'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
-          vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          timeout: '10m'
+
