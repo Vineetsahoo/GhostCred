@@ -24,26 +24,23 @@ COPY lineage/ ./ghostcred_src/lineage/
 COPY revocation/ ./ghostcred_src/revocation/
 COPY metrics/ ./ghostcred_src/metrics/
 
-# Rewrite the package path for the container install.
-RUN pip install --no-cache-dir --upgrade pip wheel
+# Upgrade pip, setuptools, and wheel FIRST — before any package build step.
+# This ensures the wheel build backend never sees the vulnerable setuptools
+# (70.x) that ships with the base image. msgpack is pinned here too so the
+# patched version is present before ghostcred's own install resolves it.
+RUN pip install --no-cache-dir --upgrade \
+        pip \
+        "setuptools>=78.1.1" \
+        "wheel" \
+        "msgpack>=1.2.1"
 
-# Install directly from the copied sources (non-editable for clean image).
+# Install the package from source. Because setuptools is already at >=78.1.1
+# at this point, the build backend will NOT downgrade it or leave stale
+# dist-info from the old version.
 COPY . /app/ghostcred_build/
 RUN pip install --no-cache-dir /app/ghostcred_build/ && \
-    # Forcefully upgrade vulnerable deps to patched versions.
-    # pip install --upgrade ensures the old dist-info is replaced atomically.
-    pip install --no-cache-dir --upgrade "setuptools>=78.1.1" "msgpack>=1.2.1" && \
-    # Scrub any leftover dist-info directories for the OLD vulnerable versions.
-    # pip --upgrade replaces the active dist-info, but stale copies can linger;
-    # remove anything that is NOT the freshly-installed safe versions.
-    find /usr/local/lib/python*/site-packages -maxdepth 1 -type d \
-        \( -name "setuptools-*.dist-info" -o -name "msgpack-*.dist-info" -o -name "*.egg-info" \) \
-        | grep -Ev "setuptools-(7[89]\.|[89][0-9]\.|[0-9]{3,}\.)|msgpack-1\.([2-9]|[0-9]{2,})\." \
-        | xargs rm -rf 2>/dev/null; \
-    # Clean up build artifacts and pip caches
     rm -rf /app/ghostcred_build/ /tmp/* /root/.cache
 
 WORKDIR /scan-target
 ENTRYPOINT ["ghostcred"]
 CMD ["scan", "--path", "/scan-target", "--ai-toolchain", "--lineage", "--fail-on-finding"]
-
