@@ -77,11 +77,11 @@ jobs:
         run: cosign sign --yes ghcr.io/${{ env.REPO_LC }}@${{ steps.build-and-push.outputs.digest }}
 
       - name: Generate SBOM (Syft)
-        uses: anchore/sbom-action@v0.15.8
+        uses: anchore/sbom-action@v0.17.2
         with:
           image: ghcr.io/${{ env.REPO_LC }}@${{ steps.build-and-push.outputs.digest }}
           format: spdx-json
-          artifact-name: ghostcred-sbom.spdx.json
+          artifact-name: ghostcred-sbom-spdx-json
           output-file: ghostcred-sbom.spdx.json
           upload-release-assets: false
 
