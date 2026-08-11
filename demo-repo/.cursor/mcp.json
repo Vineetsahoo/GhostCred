@@ -1,1 +1,18 @@
-{"mcpServers": {"openai": {"env": {"OPENAI_API_KEY": "sk-proj-FAKEKEYFORTHISDEMOONLYNOTREAL1234"}}}}
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_fakeDemoToken1234567890abcdefghijABCD"
+      }
+    },
+    "openai": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-openai"],
+      "env": {
+        "OPENAI_API_KEY": "sk-proj-FAKEKEYFORTHISDEMOONLYNOTREAL1234"
+      }
+    }
+  }
+}

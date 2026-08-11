@@ -1,0 +1,19 @@
+# GhostCred config for the demo-repo scan target.
+# This is what a real project's committed config would look like.
+
+min_confidence: 0.6
+include_ai_toolchain: true
+include_global_configs: false   # only scan project-local AI configs, not desktop apps
+auto_revoke: false
+dry_run_revocations: true
+metrics_port: 9308
+
+# Nothing is excluded in the demo — we WANT GhostCred to find everything.
+ignore_paths: []
+
+# CI logs were downloaded by the CI workflow before the scan ran.
+ci_log_dir: "ci-logs"
+
+# If you have built a local docker image from this demo, add its tag here
+# so GhostCred can check whether secrets leaked into an image layer.
+docker_image_tags: []

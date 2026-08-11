@@ -1,1 +1,8 @@
-::set-env name=OPENAI_API_KEY::sk-proj-FAKEKEYFORTHISDEMOONLYNOTREAL1234
+2026-07-20T10:14:01Z  Run: Set up environment
+2026-07-20T10:14:02Z  ::set-env name=OPENAI_API_KEY::sk-proj-FAKEKEYFORTHISDEMOONLYNOTREAL1234
+2026-07-20T10:14:03Z  ::set-env name=GITHUB_TOKEN::ghp_fakeDemoToken1234567890abcdefghijABCD
+2026-07-20T10:14:08Z  Run: Install dependencies
+2026-07-20T10:14:22Z  Successfully installed ghostcred-0.1.0
+2026-07-20T10:14:25Z  Run: Deploy to staging
+2026-07-20T10:14:26Z  Connecting with token ghp_fakeDemoToken1234567890abcdefghijABCD
+2026-07-20T10:14:30Z  Deployment complete.
