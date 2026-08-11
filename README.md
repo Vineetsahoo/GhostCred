@@ -37,8 +37,37 @@ ghostcred plant-decoys --path .
 - Recursive AI toolchain scanning now finds nested MCP configs and IDE settings more reliably.
 - Findings are deduplicated by both fingerprint and source path to keep repeated occurrences visible.
 
+## Live demo
+
+A fully runnable demo is available in [`DEMO.md`](DEMO.md). It uses `demo-repo/` — a synthetic
+project with intentionally leaked fake secrets — to walk through every capability end to end.
+
+```bash
+# Quick start (from repo root)
+pip install -e .
+pip install flask                       # mock provider only
+python scripts/mock_provider.py         # terminal 1 — simulates GitHub/OpenAI/Anthropic APIs
+python scripts/run_demo.py              # terminal 2 — runs all 10 demo steps with output
+```
+
+What the demo covers:
+
+- Code scanner finding secrets in `.env` and Python source files
+- AI toolchain scanner finding secrets inside `.cursor/mcp.json` (what Gitleaks misses)
+- Lineage tracker tracing a GitHub PAT into `docker-build.log` and a CI run log — blast radius 75/100
+- Liveness check confirming the token is still active at the provider
+- Dry-run and live revocation via the mock provider
+- CI gate (`--fail-on-finding`) producing exit code 1 to block a PR
+- Release gate scan that blocks a signed Docker push when secrets are present
+- Pre-commit hook that rejects a commit before it enters the repository
+
+The mock provider (`scripts/mock_provider.py`) handles all auth for the demo locally.
+No real API keys are needed to run any step. See [`DEMO.md`](DEMO.md) for the full
+command sequence, Windows equivalents, revocation strategy, and troubleshooting.
+
 ## Documentation map
 
+- **Live demo and command walkthrough: [DEMO.md](DEMO.md)**
 - Scanning and plugin details: [scanners/README.md](scanners/README.md)
 - Revocation and supported providers: [revocation/README.md](revocation/README.md)
 - Lineage and blast-radius tracking: [lineage/README.md](lineage/README.md)
