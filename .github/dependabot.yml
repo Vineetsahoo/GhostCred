@@ -1,13 +1,118 @@
 version: 2
+
 updates:
+
+  # ── Python dependencies ────────────────────────────────────────────────────
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
     open-pull-requests-limit: 10
 
+    # Label every Dependabot pip PR so branch protection and the policy gate
+    # can identify and require them to pass before merge.
+    labels:
+      - "dependencies"
+      - "python"
+
+    # Group all non-security patch/minor updates into one PR per week so the
+    # pipeline isn't flooded. Security updates always get their own PR so
+    # they can be merged immediately without waiting for the group.
+    groups:
+      python-runtime:
+        # All runtime deps (click, requests, pyyaml, etc.) in one PR
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      python-dev:
+        # Dev/test deps (pytest, hypothesis, mutmut) in a separate PR
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Security-only updates are never grouped — each gets its own PR so it
+    # can be reviewed and merged the same day it opens.
+    # (Dependabot automatically bypasses groups for security advisories.)
+
+    # Assign a reviewer so PRs don't sit without attention.
+    reviewers:
+      - "Vineetsahoo"
+
+    # Commit message prefix — keeps git log readable.
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps-dev)"
+      include: "scope"
+
+    # Ignore major version bumps for stable deps — those need a manual decision.
+    ignore:
+      - dependency-name: "click"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "requests"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pyyaml"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prometheus-client"
+        update-types: ["version-update:semver-major"]
+
+  # ── Docker (scanner image base) ────────────────────────────────────────────
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "Vineetsahoo"
+    commit-message:
+      prefix: "build(docker)"
+
+  # ── Root Dockerfile ────────────────────────────────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "Vineetsahoo"
+    commit-message:
+      prefix: "build(docker)"
+
+  # ── GitHub Actions ─────────────────────────────────────────────────────────
+  # Keeps action pinned SHAs up to date — critical for supply chain security.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
     open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    reviewers:
+      - "Vineetsahoo"
+    commit-message:
+      prefix: "ci(deps)"
