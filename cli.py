@@ -18,6 +18,7 @@ from ghostcred.metrics import (
     record_ttr,
     serve_metrics,
 )
+from ghostcred.reporting import ReportService
 from ghostcred.revocation import get_revoker_registry
 
 REVOKER_REGISTRY = get_revoker_registry()
@@ -84,6 +85,8 @@ def _run_scan(
 
     report: dict = {"root": str(root), "findings": [], "revocations": []}
     revoked_fingerprints: set[str] = set()
+    revocation_results: list = []   # collects RevocationResult objects for ReportService
+    lineage_map: dict = {}          # fingerprint → lineage public dict, for ReportService
 
     for f in findings:
         if metrics:
@@ -108,6 +111,7 @@ def _run_scan(
                 docker_image_tags=cfg.docker_image_tags,
             )
             finding_record["lineage"] = lin.to_public_dict()
+            lineage_map[f.fingerprint] = lin.to_public_dict()  # accumulate for ReportService
             if lin.propagations:
                 click.echo(
                     f"      ↳ blast radius: {lin.blast_radius_score}/100 across "
@@ -160,25 +164,42 @@ def _run_scan(
                                     pass
                                     
                         report["revocations"].append(result.__dict__)
+                        revocation_results.append(result)   # also track as object for ReportService
             else:
                 click.echo("      ✓ secret already inactive/rotated — no action needed")
 
     duration = round(time.time() - start, 2)
-    report["duration_seconds"] = duration
     if metrics:
         record_scan_duration(duration)
 
-    if webhook_url:
-        from ghostcred.integrations import send_webhook_report
-        success = send_webhook_report(report, webhook_url)
-        if success:
-            click.echo(f"\n📡 Report successfully sent to webhook: {webhook_url}")
-        else:
-            click.echo(f"\n❌ Failed to send report to webhook: {webhook_url}")
+    # ── Report generation (via ReportService) ────────────────────────────────
+    svc = ReportService(
+        report_path=json_out,
+        webhook_url=webhook_url or cfg.webhook_url,
+    )
+    svc.build(
+        root=str(root),
+        findings=findings,
+        revocations=revocation_results,
+        duration_seconds=duration,
+        lineage_map=lineage_map,
+        metadata={"dry_run": effective_dry_run, "threshold": threshold},
+    )
+    # Persist to disk
+    written = svc.write()
+    if written:
+        click.echo(f"\n📝 Full report written to {written}")
 
-    if json_out:
-        Path(json_out).write_text(json.dumps(report, indent=2, default=str))
-        click.echo(f"\n📝 Full report written to {json_out}")
+    # Deliver to webhook / SIEM
+    if svc.webhook_url:
+        delivered = svc.deliver()
+        if delivered:
+            click.echo(f"📡 Report delivered to webhook: {svc.webhook_url}")
+        else:
+            click.echo(f"❌ Failed to deliver report to webhook: {svc.webhook_url}")
+
+    # Print summary table
+    svc.print_summary()
 
     if metrics:
         serve_metrics(cfg.metrics_port)
@@ -188,7 +209,7 @@ def _run_scan(
         click.echo(f"\n❌ {len(findings)} secret(s) found — blocking.", err=True)
         sys.exit(1)
 
-    click.echo("\n✅ Scan complete.")
+    click.echo("✅ Scan complete.")
     return len(findings)
 
 
