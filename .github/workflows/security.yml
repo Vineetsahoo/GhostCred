@@ -36,10 +36,11 @@ jobs:
         run: |
           semgrep --config p/python \
                   --config p/command-injection \
-                  --config p/secrets \
                   --error \
                   --quiet \
                   scanners/ lineage/ revocation/ cli.py config.py
+        # p/secrets is intentionally excluded: this repo contains credential
+        # patterns and demo tokens by design, which would produce false positives.
         continue-on-error: false
 
   container-scan-trivy:
@@ -54,7 +55,7 @@ jobs:
         run: docker build -t ghostcred:latest -f docker/Dockerfile.scanner .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'ghostcred:latest'
           scanners: 'vuln'
@@ -80,24 +81,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e .
-          pip install flask pytest requests
-
-      - name: Start mock provider (background)
-        run: |
-          python scripts/mock_provider.py &
-          echo "MOCK_PID=$!" >> $GITHUB_ENV
-          # Wait for the server to be ready
-          for i in $(seq 1 20); do
-            curl -s http://localhost:5001/status && break || sleep 0.5
-          done
+          pip install -e ".[dev]"
+          pip install flask requests
 
       - name: Run DAST runtime tests
+        # The pytest fixture in test_dast_runtime.py manages the mock provider
+        # subprocess internally (scope=module). Do NOT start it separately here
+        # to avoid a port-conflict on 5001 that causes the fixture to skip.
         run: pytest tests/test_dast_runtime.py -v --tb=short
-
-      - name: Stop mock provider
-        if: always()
-        run: kill $MOCK_PID 2>/dev/null || true
 
   # ── Policy gate ─────────────────────────────────────────────────────────────
   # This is the single job to add to branch protection rules as a required
