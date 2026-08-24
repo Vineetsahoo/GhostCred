@@ -1,4 +1,4 @@
-# GhostCred scanner image — scans a build context BEFORE the real image is built.
+# GhostCred scanner image � scans a build context BEFORE the real image is built.
 #
 # Usage (standalone scan):
 #   docker build -f docker/Dockerfile.scanner -t ghostcred-scanner .
@@ -9,6 +9,13 @@
 #   scripts/docker-build-guard.sh <real docker build args>
 
 FROM python:3.14-slim
+
+# Apply all available OS security patches at build time so the image passes
+# vulnerability scans (e.g. Trivy). This picks up fixed util-linux packages
+# (CVE-2026-53612 through -53615) and any other pending Debian security updates.
+RUN apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -24,7 +31,7 @@ COPY metrics/ ./ghostcred_src/metrics/
 # Pin setuptools to >=78.1.1 (fixes CVE-2025-47273) and explicitly install
 # msgpack>=1.2.1 (fixes GHSA-6v7p-g79w-8964) so the patched wheel is present
 # before the ghostcred install runs.  The base image ships setuptools 70.x
-# and has no msgpack at all — this step replaces both with safe versions.
+# and has no msgpack at all -- this step replaces both with safe versions.
 RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" wheel && \
     pip install --no-cache-dir \
         click requests pyyaml "prometheus-client" "pluggy>=1.4,<2" "msgpack>=1.2.1"
