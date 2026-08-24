@@ -8,7 +8,7 @@ on:
   schedule:
     - cron: '0 0 * * 1' # Weekly on Monday
 
-# ── CI security policy ────────────────────────────────────────────────────────
+# -- CI security policy --------------------------------------------------------
 # Branch protection must require the `security-policy-gate` job to pass.
 # This aggregates all scan results into a single required status check.
 # Individual jobs (SAST, container scan, DAST) run in parallel; the gate
@@ -55,7 +55,9 @@ jobs:
         run: docker build -t ghostcred:latest -f docker/Dockerfile.scanner .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        # v0.36.0 is the latest clean release after the March 2026 supply chain incident.
+        # Versions below v0.35.0 used unprefixed tags (e.g. 0.28.0) which no longer resolve.
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'ghostcred:latest'
           scanners: 'vuln'
@@ -87,13 +89,13 @@ jobs:
       - name: Run DAST runtime tests
         # The pytest fixture in test_dast_runtime.py manages the mock provider
         # subprocess internally (scope=module). Do NOT start it separately here
-        # to avoid a port-conflict on 5001 that causes the fixture to skip.
+        # to avoid a port-conflict on 5001 that causes the fixture to skip all tests.
         run: pytest tests/test_dast_runtime.py -v --tb=short
 
-  # ── Policy gate ─────────────────────────────────────────────────────────────
+  # -- Policy gate -------------------------------------------------------------
   # This is the single job to add to branch protection rules as a required
   # status check. It passes only when ALL scan jobs above pass.
-  # Add "security-policy-gate" to: Settings → Branches → Require status checks.
+  # Add "security-policy-gate" to: Settings ? Branches ? Require status checks.
   security-policy-gate:
     name: Security Policy Gate
     runs-on: ubuntu-latest
@@ -112,15 +114,15 @@ jobs:
           echo ""
 
           FAILED=0
-          [ "$SAST_RESULT"      != "success" ] && { echo "❌ SAST failed";             FAILED=1; }
-          [ "$CONTAINER_RESULT" != "success" ] && { echo "❌ Container scan failed";   FAILED=1; }
-          [ "$DAST_RESULT"      != "success" ] && { echo "❌ DAST runtime tests failed"; FAILED=1; }
+          [ "$SAST_RESULT"      != "success" ] && { echo "? SAST failed";             FAILED=1; }
+          [ "$CONTAINER_RESULT" != "success" ] && { echo "? Container scan failed";   FAILED=1; }
+          [ "$DAST_RESULT"      != "success" ] && { echo "? DAST runtime tests failed"; FAILED=1; }
 
           if [ "$FAILED" -eq 0 ]; then
-            echo "✅ All security checks passed — policy gate open."
+            echo "? All security checks passed � policy gate open."
           else
             echo ""
-            echo "🚫 Security policy gate FAILED."
+            echo "?? Security policy gate FAILED."
             echo "   All three checks (SAST, container scan, DAST) must pass before merge."
             exit 1
           fi
