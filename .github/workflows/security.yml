@@ -27,7 +27,8 @@ jobs:
           python-version: '3.11'
 
       - name: Install Bandit + Semgrep
-        run: pip install bandit semgrep
+        # Pinned to match pyproject.toml [dev] extras so CI and local runs use identical versions.
+        run: pip install "bandit==1.9.4" "semgrep==1.176.1"
 
       - name: Run Bandit
         run: bandit -r scanners/ lineage/ revocation/ cli.py config.py -ll -ii
@@ -119,7 +120,7 @@ jobs:
           [ "$DAST_RESULT"      != "success" ] && { echo "? DAST runtime tests failed"; FAILED=1; }
 
           if [ "$FAILED" -eq 0 ]; then
-            echo "? All security checks passed — policy gate open."
+            echo "? All security checks passed ï¿½ policy gate open."
           else
             echo ""
             echo "?? Security policy gate FAILED."

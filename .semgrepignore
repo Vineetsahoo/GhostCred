@@ -1,0 +1,33 @@
+# .semgrepignore — controls which paths semgrep skips locally and in CI.
+# Mirrors the paths excluded from the workflow scan command:
+#   semgrep ... scanners/ lineage/ revocation/ cli.py config.py
+# Anything NOT in those targets is noise for this project.
+
+# Virtual environment and build artefacts
+.venv/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Tests — scanned by pytest, not semgrep
+tests/
+
+# Demo / fixture files intentionally contain fake credentials
+demo-repo/
+decoys.py
+
+# Hypothesis / pytest cache
+.hypothesis/
+.pytest_cache/
+
+# Docker and CI tooling (not production code)
+docker/
+scripts/
+
+# Docs
+docs/
+
+# Dependency tracking
+ghostcred.egg-info/

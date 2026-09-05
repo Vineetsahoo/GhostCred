@@ -18,6 +18,10 @@ dev = [
     "pytest-cov>=5.0,<8",
     "hypothesis>=6.98,<7",
     "mutmut>=2.4,<4",
+    # SAST tools — pinned to match CI (security.yml installs these bare;
+    # pin here so local runs use the same version as the workflow).
+    "bandit==1.9.4",
+    "semgrep==1.176.1",
 ]
 # AWS support (future): pip install ghostcred[aws]
 aws = ["boto3>=1.34,<2"]
@@ -44,3 +48,15 @@ package-dir = {"ghostcred" = "."}
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+
+# ── Bandit (SAST) ─────────────────────────────────────────────────────────────
+# Mirrors the workflow command:
+#   bandit -r scanners/ lineage/ revocation/ cli.py config.py -ll -ii
+# -ll  = only report Medium severity and above
+# -iii = only report High confidence and above
+# Run locally: bandit -r scanners/ lineage/ revocation/ cli.py config.py -ll -ii
+[tool.bandit]
+targets = ["scanners", "lineage", "revocation", "cli.py", "config.py"]
+severity = "medium"   # -ll equivalent: skip Low severity
+confidence = "high"   # -ii equivalent: skip Low/Medium confidence
+skips = []            # no tests skipped — full coverage
