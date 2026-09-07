@@ -19,7 +19,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.4.0
 
       - name: Install slsa-verifier
-        uses: slsa-framework/slsa-verifier/actions/installer@v2.6.0
+        uses: slsa-framework/slsa-verifier/actions/installer@v2.7.1
 
       - name: Fetch latest release information
         id: get_release
