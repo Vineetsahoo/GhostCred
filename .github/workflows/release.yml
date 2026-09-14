@@ -32,7 +32,7 @@ jobs:
         run: python -m build
         
       - name: Generate SLSA Provenance for Python Artifacts
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/*"
           
@@ -64,7 +64,7 @@ jobs:
             ghcr.io/${{ env.REPO_LC }}:${{ env.RELEASE_TAG }}
           
       - name: Generate SLSA Provenance for Docker Image
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/${{ env.REPO_LC }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
